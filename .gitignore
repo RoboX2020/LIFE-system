@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Model weights (downloaded / trained)
+*.pt
+!.gitkeep
+models/*.task
+
+# Runtime data
+data/
+assets/siren.wav
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

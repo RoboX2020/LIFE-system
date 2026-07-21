@@ -1,0 +1,4 @@
+# Drop optional custom weights here:
+#   fire.pt    - fire/smoke detection model
+#   weapon.pt  - gun/rifle/etc. detection model
+# The main YOLO weight (yolo26n.pt) downloads automatically on first run.

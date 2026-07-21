@@ -1,0 +1,17 @@
+# SentryVision - core dependencies
+# Computer vision + detection
+ultralytics>=8.3.0          # YOLO (auto-uses newest available weights, e.g. yolo26n.pt)
+opencv-python>=4.9.0
+mediapipe>=0.10.14
+numpy>=1.26.0
+
+# Web server / dashboard
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
+# Config + utilities
+PyYAML>=6.0
+requests>=2.31.0
+
+# Optional real-notification providers (used only if credentials are present):
+# twilio>=9.0.0

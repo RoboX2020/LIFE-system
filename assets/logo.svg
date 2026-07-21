@@ -1,0 +1,26 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LIFE logo">
+  <defs>
+    <linearGradient id="lifeBg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1b1e24"/>
+      <stop offset="1" stop-color="#0b0c0f"/>
+    </linearGradient>
+    <linearGradient id="lifeHeart" x1="24" y1="30" x2="104" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff5a5f"/>
+      <stop offset="1" stop-color="#e11d2a"/>
+    </linearGradient>
+    <filter id="lifeGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="2" y="2" width="124" height="124" rx="28" fill="url(#lifeBg)" stroke="#2a2e37" stroke-width="2"/>
+
+  <!-- heart -->
+  <path d="M64 103C64 103 26 79 26 51.5C26 38 36 29 47.5 29C55 29 61 33 64 39C67 33 73 29 80.5 29C92 29 102 38 102 51.5C102 79 64 103 64 103Z"
+        fill="none" stroke="url(#lifeHeart)" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- EKG pulse across the heart -->
+  <path d="M30 64H49L56 47L66 84L74 60L80 64H98"
+        fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" filter="url(#lifeGlow)"/>
+</svg>

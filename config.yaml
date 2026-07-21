@@ -1,0 +1,145 @@
+# ============================================================
+# LIFE configuration
+# Everything tunable lives here - no code edits needed to retune.
+# ============================================================
+
+source:
+  # type: webcam | file | rtsp | demo
+  #   webcam -> path is the device index (0, 1, ...)
+  #   file   -> path is a video file path
+  #   rtsp   -> path is an rtsp:// url
+  #   demo   -> synthetic flickering-fire clip (no hardware needed, great for a first run)
+  type: demo
+  path: 0
+  width: 1280
+  height: 720
+  loop: true            # for file/demo sources: restart when finished
+
+processing:
+  max_fps: 15           # cap processing rate to keep CPU sane
+
+object_detector:
+  enabled: true
+  model: yolo26n.pt     # falls back automatically to an available YOLO weight
+  conf: 0.35
+  device: cpu           # "cpu", "0" (cuda), or "mps"
+  person_label: person
+
+detectors:
+  fall:
+    enabled: true
+    horizontal_angle: 55.0        # torso angle (deg from vertical) considered "on the ground"
+    fall_velocity: 0.30           # normalized downward velocity/sec that flags a rapid drop
+    velocity_window_sec: 0.8      # look-back window for the rapid-drop signal
+    aspect_ratio_wide: 1.1        # bbox w/h above this = lying down
+    ground_persistence_frames: 6  # must stay down this many frames to CONFIRM a fall
+    vote_threshold: 2             # how many of {angle, velocity, aspect} must agree
+    min_visibility: 0.5
+
+  fire:
+    enabled: true
+    model: models/fire.pt         # optional custom weights (fire/smoke classes)
+    conf: 0.40
+    heuristic:
+      enabled: true               # HSV + flicker fallback when no fire model is present
+      min_area_ratio: 0.0015      # fraction of frame that must look like fire
+      flicker_frames: 4           # frames of flicker before confirming
+
+  weapon:
+    enabled: true
+    model: models/weapon.pt       # optional custom weights (gun/rifle/etc.)
+    conf: 0.40
+    # labels treated as weapons (matched case-insensitively against model class names)
+    labels: [knife, gun, pistol, rifle, firearm, weapon]
+    proximity_ratio: 1.6          # weapon within this * person-size is a "threat"
+
+fusion:
+  # Single-signal rules. signal is one of:
+  #   fall, fire, smoke, weapon, weapon_threat, person
+  rules:
+    - name: confirmed_fall
+      signal: fall
+      event_type: FALL
+      severity: HIGH
+      responder: EMS
+      min_confidence: 0.50
+      min_persistence: 1
+      cooldown_seconds: 30
+
+    - name: fire_detected
+      signal: fire
+      event_type: FIRE
+      severity: CRITICAL
+      responder: FIRE
+      min_confidence: 0.40
+      min_persistence: 3
+      cooldown_seconds: 30
+
+    - name: smoke_detected
+      signal: smoke
+      event_type: SMOKE
+      severity: HIGH
+      responder: FIRE
+      min_confidence: 0.40
+      min_persistence: 4
+      cooldown_seconds: 45
+
+    - name: weapon_present
+      signal: weapon
+      event_type: WEAPON
+      severity: HIGH
+      responder: POLICE
+      min_confidence: 0.40
+      min_persistence: 2
+      cooldown_seconds: 30
+
+    - name: weapon_threat
+      signal: weapon_threat
+      event_type: WEAPON_THREAT
+      severity: CRITICAL
+      responder: POLICE
+      min_confidence: 0.40
+      min_persistence: 1
+      cooldown_seconds: 20
+
+  # Multi-signal combinations escalate severity.
+  combinations:
+    - name: fire_with_person
+      requires: [fire, person]
+      event_type: FIRE_WITH_PERSON
+      severity: CRITICAL
+      responder: FIRE
+      min_persistence: 3
+      cooldown_seconds: 30
+
+alarm:
+  enabled: true
+  min_severity: HIGH            # INFO < LOW < MEDIUM < HIGH < CRITICAL
+
+notifications:
+  responders:
+    EMS:    { name: "Emergency Medical Services", contact: "108" }
+    FIRE:   { name: "Fire Department",            contact: "101" }
+    POLICE: { name: "Police",                     contact: "100" }
+  adapters:
+    console:
+      enabled: true
+    webhook:
+      enabled: false
+      url: "http://localhost:9000/alert"
+    email:
+      enabled: false
+      # Activates only if these env vars are set:
+      # SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_EMAIL_FROM, ALERT_EMAIL_TO
+    sms:
+      enabled: false
+      # Activates only if these env vars are set (requires `pip install twilio`):
+      # TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM, ALERT_SMS_TO
+
+storage:
+  snapshots_dir: data/snapshots
+  log_file: data/events.jsonl
+
+server:
+  host: 127.0.0.1
+  port: 8000
