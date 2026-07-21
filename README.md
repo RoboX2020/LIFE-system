@@ -51,6 +51,15 @@
 
 ---
 
+https://app.notion.com/p/What-s-the-value-of-a-life-3a4459525be280d9a9d3d28ed9af60f1?source=copy_link
+
+
+
+https://github.com/user-attachments/assets/e80be64f-b1aa-4b79-ab4e-564d6877da90
+
+
+
+
 Project - LIFE watches a camera feed and recognizes emergencies the instant they happen &mdash;
 a person **falling**, **fire or smoke**, an **armed threat** &mdash; then decides how
 serious the incident is, which agency should respond, **sounds a local alarm**, and
