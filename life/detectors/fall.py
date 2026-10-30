@@ -143,6 +143,7 @@ class FallDetector(Detector):
         if not self.enabled or self._backend is None:
             return []
 
+        # # Find the person's 33 body landmarks in this frame (shoulders, hips, ...).
         pts = self._landmarks(frame)
         if pts is None:
             self._decay()
@@ -150,10 +151,13 @@ class FallDetector(Detector):
 
         h, w = frame.shape[:2]
         try:
+            # # Landmarks 11/12 are the shoulders, 23/24 are the hips.
             ls, rs, lh, rh = pts[11], pts[12], pts[23], pts[24]
         except IndexError:
             return []
 
+        # # Bail when the shoulders/hips aren't clearly visible - never guess from
+        # # half a person.
         if _vis(ls, rs, lh, rh) < self.min_visibility:
             self._decay()
             return []
@@ -161,12 +165,17 @@ class FallDetector(Detector):
         sx, sy = (ls.x + rs.x) / 2.0, (ls.y + rs.y) / 2.0
         hx, hy = (lh.x + rh.x) / 2.0, (lh.y + rh.y) / 2.0
 
+        # # Signal 1: how horizontal the torso is (shoulder-to-hip line vs straight
+        # # down). Standing is near 0, lying flat near 90.
         torso_angle = self._torso_angle(sx, sy, hx, hy)
         centroid_y = (sy + hy) / 2.0
         self._centroids.append((timestamp, centroid_y))
+        # # Signal 2: how fast the body's center dropped in the last split-second.
         velocity = self._recent_down_velocity(timestamp)
+        # # Signal 3: did the body outline flip from tall (standing) to wide (lying)?
         aspect = self._aspect_ratio(pts)
 
+        # # Each signal that fires adds a vote; the state machine weighs them.
         votes, reasons = 0, []
         if torso_angle >= self.horizontal_angle:
             votes += 1; reasons.append("horizontal")
@@ -175,9 +184,12 @@ class FallDetector(Detector):
         if aspect >= self.aspect_wide:
             votes += 1; reasons.append("wide_bbox")
 
+        # # STANDING -> FALLING -> ON_GROUND -> CONFIRMED, only while the votes keep
+        # # holding - so sitting down or bending over never becomes an alarm.
         self._advance_state(votes, torso_angle)
 
         if self._state == _State.CONFIRMED:
+            # # More agreeing signals = higher reported confidence (capped at 0.99).
             confidence = min(0.99, 0.5 + 0.15 * votes)
             return [
                 Detection(
@@ -213,6 +225,7 @@ class FallDetector(Detector):
 
     # ---- geometry helpers -------------------------------------------------
     @staticmethod
+    # # Angle between the torso vector and straight-down, via the dot product.
     def _torso_angle(sx: float, sy: float, hx: float, hy: float) -> float:
         vx, vy = hx - sx, hy - sy
         norm = math.hypot(vx, vy)
@@ -221,6 +234,8 @@ class FallDetector(Detector):
         cos_a = max(-1.0, min(1.0, vy / norm))
         return math.degrees(math.acos(cos_a))
 
+    # # How fast the body center has been moving downward (per second), measured
+    # # over the recent positions kept in self._centroids.
     def _recent_down_velocity(self, now: float) -> float:
         recent = [(t, y) for (t, y) in self._centroids if now - t <= self.velocity_window]
         if len(recent) < 2:
